@@ -1,21 +1,48 @@
+
 package info.daylemk.notishiner;
 
 import NotiSurfaceDemo1.NotiSurfaceDemo;
 
 import android.content.Context;
+import android.os.Handler;
+import android.os.Message;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
-public class NotiSurfaceView extends SurfaceView implements SurfaceHolder.Callback{
+public class NotiSurfaceView extends SurfaceView implements SurfaceHolder.Callback {
     private static final String TAG = "[NotiSurfaceView]";
-    
+
+    // the delay start for the screen on
+    private static final int DELAY_START = 1000;
+
     private NotiSurfaceDemo demo;
-    
+    private MyHandler handler;
+
+    class MyHandler extends Handler {
+        private static final String TAG = "[MyHandler]";
+
+        static final int MSG_DELAY_START = 1;
+
+        @Override
+        public void handleMessage(Message msg) {
+            switch (msg.what) {
+                case MSG_DELAY_START:
+                    demo.draw();
+                    break;
+                default:
+                    break;
+            }
+
+            super.handleMessage(msg);
+        }
+    }
+
     public NotiSurfaceView(Context context) {
         super(context);
         this.getHolder().addCallback(this);
+        handler = new MyHandler();
     }
 
     @Override
@@ -26,18 +53,18 @@ public class NotiSurfaceView extends SurfaceView implements SurfaceHolder.Callba
 
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
-        // TODO Auto-generated method stub
         Logger.d(TAG + "th surface created");
         demo = new NotiSurfaceDemo(this);
         demo.surfaceCreated(holder);
-        demo.draw();
+        handler.sendMessageDelayed(handler.obtainMessage(MyHandler.MSG_DELAY_START), DELAY_START);
     }
 
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
         Logger.d(TAG + "th surface destoryed");
-        // call the destroy method and set it 2 null
         demo.surfaceDestroyed(holder);
+        // clean the message queue
+        handler.removeCallbacksAndMessages(null);
         demo = null;
     }
 
@@ -50,7 +77,7 @@ public class NotiSurfaceView extends SurfaceView implements SurfaceHolder.Callba
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         Logger.d(TAG + "keyCode : " + keyCode);
-        
+
         return super.onKeyDown(keyCode, event);
     }
 }

@@ -1,6 +1,10 @@
 
 package NotiSurfaceDemo1;
 
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.util.Log;
 import android.view.SurfaceHolder;
 
 import info.daylemk.notishiner.Logger;
@@ -8,7 +12,6 @@ import info.daylemk.notishiner.NotiSurfaceObject;
 import info.daylemk.notishiner.NotiSurfaceView;
 
 public class NotiSurfaceDemo extends NotiSurfaceObject {
-
     private static final String TAG = "[NotiSurfaceDemo1]";
 
     private NotiSurfaceDrawer drawer;
@@ -41,15 +44,15 @@ public class NotiSurfaceDemo extends NotiSurfaceObject {
     int nextCalItem() {
         return doneCalItem == MAX_ITEM_COUNT - 1 ? 0 : doneCalItem + 1;
     }
-    
+
     /**
      * set the done cal item
      */
-    void setDoneCalItem (){
+    void setDoneCalItem() {
         doneCalItem = doneCalItem == MAX_ITEM_COUNT - 1 ? 0 : doneCalItem + 1;
     }
-    
-    void setDoneCalItem (int i){
+
+    void setDoneCalItem(int i) {
         doneCalItem = i;
     }
 
@@ -62,12 +65,12 @@ public class NotiSurfaceDemo extends NotiSurfaceObject {
     int foreCalItem(int i) {
         return i == 0 ? MAX_ITEM_COUNT - 1 : --i;
     }
-    
-    void setDoneDrawItem (){
-        doneDrawItem = doneDrawItem == MAX_ITEM_COUNT -1 ? 0 : doneDrawItem + 1;
+
+    void setDoneDrawItem() {
+        doneDrawItem = doneDrawItem == MAX_ITEM_COUNT - 1 ? 0 : doneDrawItem + 1;
     }
-    
-    void setDoneDrawItem (int i){
+
+    void setDoneDrawItem(int i) {
         doneDrawItem = i;
     }
 
@@ -80,7 +83,7 @@ public class NotiSurfaceDemo extends NotiSurfaceObject {
         if (datas[nextDrawItemTemp].drew)
             return NOT_AVALIABLE;
         // if the next item is not drew, go on
-//        doneDrawItem = nextDrawItemTemp;
+        // doneDrawItem = nextDrawItemTemp;
         return nextDrawItemTemp;
         /*
          * // if the calculating item is the same as drawing item, return //
@@ -93,13 +96,14 @@ public class NotiSurfaceDemo extends NotiSurfaceObject {
     // if the abs value is 2, means we are going to meet the drawer item at next
     // cal, so wait.
     boolean shouldCal() {
-        //DEBUG
-        for (int i = 0; i < MAX_ITEM_COUNT ; i ++){
+        // DEBUG
+        for (int i = 0; i < MAX_ITEM_COUNT; i++) {
             Logger.d(TAG + i + " :" + datas[i].drew);
         }
         // if the fore draw item is drawed, we are going to cal
         // EDIT: use now draw item
-//        int foreDrawItemTemp = nowDrawItem == 0 ? MAX_ITEM_COUNT - 1 : nowDrawItem - 1;
+        // int foreDrawItemTemp = nowDrawItem == 0 ? MAX_ITEM_COUNT - 1 :
+        // nowDrawItem - 1;
         if (datas[doneDrawItem].drew)
             return true;
         return false;
@@ -116,32 +120,55 @@ public class NotiSurfaceDemo extends NotiSurfaceObject {
     }
 
     private void initData() {
+        // 1. calculate the screen size, and any other things depends on the
+        // size of screen
+        NotiSurfaceData.calScreen(notiSurfaceView);
+
         int dataLength = datas.length;
 
         Logger.v(TAG + "init data, length : " + dataLength);
 
+        // 2. init the the data array, and everything needs in the data object
         for (int i = 0; i < dataLength; i++) {
             datas[i] = new NotiSurfaceData();
+            datas[i].initPoints();
         }
     }
-    
+
+    /**
+     * set the background of the canvas
+     * <br/> should be called after <b>NotiSurfaceData.calScreen</b>
+     * @param holder
+     */
+    private void setBackground() {
+        Canvas canvas = holder.lockCanvas();
+        canvas.drawColor(Color.BLACK);
+//        Paint paintTmp = new Paint();
+//        paintTmp.setColor(Color.BLACK);
+//        // the witdh and height should be ok now
+//        canvas.drawRect(0, 0, NotiSurfaceData.screenWidth, NotiSurfaceData.screenHeight, paintTmp);
+        holder.unlockCanvasAndPost(canvas);
+    }
+
     /**
      * get the drawer thread state
+     * 
      * @return
      */
-    Thread.State getDrawerThreadState (){
-        if(drawerThread != null){
+    Thread.State getDrawerThreadState() {
+        if (drawerThread != null) {
             return drawerThread.getState();
         }
         return Thread.State.TERMINATED;
     }
-    
+
     /**
      * get the drawer thread state
+     * 
      * @return
      */
-    Thread.State getCalerThreadState (){
-        if(calerThread != null){
+    Thread.State getCalerThreadState() {
+        if (calerThread != null) {
             return calerThread.getState();
         }
         return Thread.State.TERMINATED;
@@ -152,30 +179,8 @@ public class NotiSurfaceDemo extends NotiSurfaceObject {
         // don't forget to call the super method
         super.surfaceCreated(holder);
         initData();
-
-        caler = new NotiSurfaceCaler(this);
-        calerThread = new Thread(caler, NotiSurfaceCaler.TAG);
-        calerThread.start();
-        // try {
-        // synchronized (this) {
-        // calerThread.wait();
-        // }
-        // } catch (InterruptedException e) {
-        // // TODO Auto-generated catch block
-        // e.printStackTrace();
-        // }
-        
-        drawer = new NotiSurfaceDrawer(holder, this);
-        drawerThread = new Thread(drawer, NotiSurfaceDrawer.TAG);
-        drawerThread.start();
-        // try {
-        // synchronized (drawerThread) {
-        // drawerThread.wait();
-        // }
-        // } catch (InterruptedException e) {
-        // // TODO Auto-generated catch block
-        // e.printStackTrace();
-        // }
+        // set the background, so the user will know we are running
+        setBackground();
     }
 
     @Override
@@ -210,5 +215,29 @@ public class NotiSurfaceDemo extends NotiSurfaceObject {
     @Override
     public void draw() {
         super.draw();
+
+        caler = new NotiSurfaceCaler(this);
+        calerThread = new Thread(caler, NotiSurfaceCaler.TAG);
+        calerThread.start();
+        // try {
+        // synchronized (this) {
+        // calerThread.wait();
+        // }
+        // } catch (InterruptedException e) {
+        // // TODO Auto-generated catch block
+        // e.printStackTrace();
+        // }
+
+        drawer = new NotiSurfaceDrawer(holder, this);
+        drawerThread = new Thread(drawer, NotiSurfaceDrawer.TAG);
+        drawerThread.start();
+        // try {
+        // synchronized (drawerThread) {
+        // drawerThread.wait();
+        // }
+        // } catch (InterruptedException e) {
+        // // TODO Auto-generated catch block
+        // e.printStackTrace();
+        // }
     }
 }

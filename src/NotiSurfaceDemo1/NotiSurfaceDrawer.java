@@ -1,8 +1,6 @@
 
 package NotiSurfaceDemo1;
 
-import android.graphics.Bitmap;
-import android.graphics.Bitmap.Config;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.os.SystemClock;
@@ -14,29 +12,32 @@ import info.daylemk.notishiner.Logger;
 public class NotiSurfaceDrawer implements Runnable {
     static final String TAG = "[NotiSurfaceDrawer]";
 
+    /**
+     * the FPS of the drawer
+     */
+    static final int FPS = 30;
+
     // use volatile and package permission
     volatile boolean running = true;
 
     private SurfaceHolder holder;
     private NotiSurfaceDemo demo;
-    
-    private long lastTime = 0;
 
-    public NotiSurfaceDrawer() {
-    }
+    private long lastTime = 0;
+    // Per Frame Last Time
+    private int pflt;
 
     public NotiSurfaceDrawer(SurfaceHolder holder, NotiSurfaceDemo notiSurfaceDemo) {
         this.holder = holder;
         demo = notiSurfaceDemo;
+        pflt = 1000 / FPS;
     }
 
     @Override
     public void run() {
         Logger.d(TAG + "drawer started");
-        int width = demo.getSurfaceView().getWidth();
-        int height = demo.getSurfaceView().getHeight();
-        Logger.d(TAG + "width : " + demo.getSurfaceView().getWidth());
-        Logger.d(TAG + "height : " + demo.getSurfaceView().getHeight());
+        int width = NotiSurfaceData.screenWidth;
+        int height = NotiSurfaceData.screenHeight;
         // Bitmap bitmap = Bitmap.createBitmap(demo.getSurfaceView().getWidth(),
         // demo
         // .getSurfaceView().getHeight(), Config.ARGB_8888);;
@@ -53,6 +54,8 @@ public class NotiSurfaceDrawer implements Runnable {
         // here, we really going to draw
         while (running) {
             if (holder != null) {
+                // note time first
+                // lastTime = SystemClock.elapsedRealtime();
                 // call this every time
                 int item = demo.nextDrawItem();
 
@@ -79,33 +82,32 @@ public class NotiSurfaceDrawer implements Runnable {
                     // not break, man
                     continue;
                 }
+
                 Logger.d(TAG + "drawer item : " + item);
 
-                //////////////////////////
+                // ////////////////////////
                 // ------draw----------//
-                ////////////////////////
+                // //////////////////////
                 Canvas canvas = holder.lockCanvas();
-                
-                paint.setColor(datas[item].bg_color);
-                canvas.drawRect(0, 0, width, height, paint);
+
+                // draw the background
+                canvas.drawColor(datas[item].bg_color);
+                // not this
+//                paint.setColor(datas[item].bg_color);
+//                canvas.drawRect(0, 0, width, height, paint);
 
                 paint.setColor(datas[item].circle_color);
                 canvas.drawCircle(datas[item].circle_x, datas[item].circle_y,
                         datas[item].circle_radius, paint);
                 // canvas.drawBitmap(bitmap, 0, 0, paint);
-                
+
                 holder.unlockCanvasAndPost(canvas);
-                //////////////////////////
+                // ////////////////////////
                 // ------draw----------//
-                ////////////////////////
+                // //////////////////////
                 // set the this item is drew when we finished
                 datas[item].drew = true;
                 demo.setDoneDrawItem(item);
-                
-                //DEBUG
-                long timeTemp = SystemClock.elapsedRealtime();
-                Logger.w(TAG + "fps : " + 1000/(timeTemp - lastTime));
-                lastTime = timeTemp;
 
                 Logger.i(TAG + "drawing : " + datas[item]);
 
@@ -120,6 +122,23 @@ public class NotiSurfaceDrawer implements Runnable {
                         }
                     }
                 }
+
+                long lastTemp = lastTime;
+                long timeTemp = SystemClock.elapsedRealtime();
+                long timeScape = timeTemp - lastTime;
+                lastTime = timeTemp;
+                if (timeScape < pflt) {
+                    Logger.w(TAG + "timeScape : " + timeScape);
+                    try {
+                        Thread.sleep(pflt - timeScape);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+                // DEBUG
+                Logger.w(TAG + "fps : " + 1000 / (SystemClock.elapsedRealtime() - lastTemp));
+                // set last time after done
+//                lastTime = SystemClock.elapsedRealtime();
             } else {
                 Log.e(Logger.TAG, TAG + "the holder is null??? killed");
                 // if the holder is null, kill yourself

@@ -2,6 +2,7 @@
 package NotiSurfaceDemo1;
 
 import android.util.Log;
+import android.view.animation.OvershootInterpolator;
 
 import info.daylemk.notishiner.Logger;
 
@@ -12,17 +13,23 @@ public class NotiSurfaceCaler implements Runnable {
     volatile boolean running = true;
 
     private NotiSurfaceDemo demo;
+    private OvershootInterpolator overshoot;
 
     private int notifyCount = 0;
 
     public NotiSurfaceCaler(NotiSurfaceDemo notiSurfaceDemo) {
         this.demo = notiSurfaceDemo;
+        overshoot = new OvershootInterpolator(2f);
     }
 
     @Override
     public void run() {
         Logger.d(TAG + "the caler started");
         NotiSurfaceData[] datas = demo.datas;
+        int screenWidth = NotiSurfaceData.screenWidth;
+        int screenHeight = NotiSurfaceData.screenHeight;
+        int center_x = screenWidth / 2;
+        int center_y = screenHeight / 2;
         while (running) {
             if (demo == null) {
                 Log.e(Logger.TAG, TAG + "the NotiSurfaceDemo is null??? die");
@@ -47,10 +54,26 @@ public class NotiSurfaceCaler implements Runnable {
 
                 Logger.d(TAG + "cal : " + item + ", draw : " + demo.doneDrawItem);
 
-//                datas[item].bg_color += 100;
-                datas[item].paint_color += 10;
-                datas[item].circle_radius -= 1;
-                // set false, so we can know the item is not drawed
+                // datas[item].bg_color += 100;
+                datas[item].circle_x = center_x;
+                datas[item].circle_y = center_y;
+                datas[item].paint_color += 0x1111;
+                if (datas[item].circle_ratio >= 1) {
+                    //DEBUG
+                    if(Common.DEBUG_CIRCLE){
+                        datas[item].circle_ratio = 0f;                    
+                    }
+                    // do nothing
+                } else {
+                    // we add the animation of overshoot, so we need
+                    // re-calculate the step
+                    datas[item].circle_radius = overshoot
+                            .getInterpolation((datas[item].circle_ratio + NotiSurfaceData.ratio_step_circle))
+                            * NotiSurfaceData.max_circle_radius;
+                    // don't forget let ratio grow
+                    datas[item].circle_ratio += NotiSurfaceData.ratio_step_circle;
+                }
+                // set false, so we can know the item is not drew
                 datas[item].drew = false;
                 // set this
                 demo.setDoneCalItem(item);
