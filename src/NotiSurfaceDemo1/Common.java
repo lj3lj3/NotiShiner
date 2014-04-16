@@ -1,5 +1,5 @@
 package NotiSurfaceDemo1;
 
 public class Common {
-    static final boolean DEBUG_CIRCLE = true;
+    static final boolean DEBUG_CIRCLE = false;
 }

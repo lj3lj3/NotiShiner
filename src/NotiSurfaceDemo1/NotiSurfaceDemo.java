@@ -3,8 +3,6 @@ package NotiSurfaceDemo1;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Paint;
-import android.util.Log;
 import android.view.SurfaceHolder;
 
 import info.daylemk.notishiner.Logger;
@@ -131,7 +129,7 @@ public class NotiSurfaceDemo extends NotiSurfaceObject {
         // 2. init the the data array, and everything needs in the data object
         for (int i = 0; i < dataLength; i++) {
             datas[i] = new NotiSurfaceData();
-            datas[i].initPoints();
+            datas[i].init();
         }
     }
 
@@ -190,16 +188,6 @@ public class NotiSurfaceDemo extends NotiSurfaceObject {
         // set it directly
         caler.running = false;
         drawer.running = false;
-        // wait for thread dead
-        synchronized (this) {
-            this.notifyAll();
-        }
-        try {
-            calerThread.join();
-        } catch (InterruptedException e1) {
-            e1.printStackTrace();
-        }
-        Logger.d(TAG + "caler thread dead");
         // this place, notify should be ok
         synchronized (this) {
             this.notify();
@@ -209,7 +197,19 @@ public class NotiSurfaceDemo extends NotiSurfaceObject {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        Logger.d(TAG + "drawer thread dead");
+        Logger.d(TAG + "drawer thread killed");
+        // wait for thread dead
+        synchronized (this) {
+            this.notifyAll();
+        }
+        try {
+            calerThread.join();
+        } catch (InterruptedException e1) {
+            e1.printStackTrace();
+        }
+        Logger.d(TAG + "caler thread killed");
+        
+        Logger.i(TAG + "the threads killed success");
     }
 
     @Override
